@@ -204,6 +204,58 @@ Robot spent 0:00:00.013964 time collecting Grapes.
 Да, мы использовали их, поскольку мы отправляли в функцию аттрибут ```self```, он находился под индексом 0 в ```*args```.
 Теперь мы имеем параметр fruit в ```*args``` под индексом 1 и можем обращаться к нему в нашем декораторе.
 
+
+Однако есть возможность решить эту проблему элегантнее. Прежде я не говорил, что мы можем отправлять параметры и в сам декоратор. Из-за этого нам пришлось перекаверкать код, и постоянно отправлять параметры при вызове функций.  
+
+Так вот, мы буквально можем обернуть обёртку!
+В таком случае наша оборачиваемая функция отправляется в outer (следущий слой обертки), а наш новый декоратор выглядит так:
+
+```python
+def getEfficiency(fruit):
+	def outer(method):
+		def wrapper(*args, **kwargs):
+			start = datetime.now()
+			loot = method(*args, **kwargs)
+			print(f'Robot spent {datetime.now() - start} time collecting {fruit}.')
+			return loot
+		return wrapper
+	return outer
+```
+
+Теперь мы можем не париться, отправляя название фрукта при вызове функции. А обернуть функцию декоратором, и отправить параметры декоратору!
+
+```python
+class Robot:
+	def __init__(self, name):
+		self.name = name
+
+	@getEfficiency("apples") #отправляем "apples" в fruit из getEfficiency(fruit)
+	def collectApples(self):
+		loot = [x for x in range(TREES_NUMBER) if x % 3 != 0]
+		return loot
+
+	@getEfficiency("grapes")
+	def collectGrapes(self):
+		loot = [x for x in range(TREES_NUMBER) if x % 12 != 0]
+		return loot
+
+	@getEfficiency("oranges")
+	def collectOranges(self):
+		loot = [x for x in range(TREES_NUMBER) if x % 6 != 0]
+		return loot
+
+
+lootie = Robot('Lootie')
+collectedApples = lootie.collectApples()
+collectedGrapes = lootie.collectGrapes()
+collectedOranges = lootie.collectOranges()
+```
+Согласитесь, так намного проще!
+###### Output
+> Robot spent 0:00:00.013962 time collecting apples.  
+Robot spent 0:00:00.014959 time collecting grapes.  
+Robot spent 0:00:00.013963 time collecting oranges.  
+
 ***
 
 Рассмотрим еще один пример возможного использования декораторов. Ранее мы оборачивали функцию для того, чтобы засечь время, за которое Лутти собирает урожай. Теперь мы хотим научить Лутти считать! Тоесть, выполнять базовые арифметические операции. Выглядит это так, вы говорите ему операцию и два числа, а он вам ответ!
